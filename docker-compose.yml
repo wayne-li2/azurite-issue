@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite
+    ports:
+      - '10000:10000'
+    command: azurite-blob --blobHost 0.0.0.0
+  test:
+    image: docker.io/library/test
+    command: node app/index.js
+    depends_on:
+      - azurite
