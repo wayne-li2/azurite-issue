@@ -5,7 +5,7 @@ services:
     container_name: azurite
     ports:
       - '10000:10000'
-    command: azurite-blob --blobHost 0.0.0.0
+    command: azurite-blob --blobHost 0.0.0.0 -d ./debug.log
   test:
     image: docker.io/library/test
     command: node app/index.js
