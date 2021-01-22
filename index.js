@@ -95,8 +95,11 @@ async function asyncMain() {
   const size = 26;
   const md5 = getBinaryMD5(data);
   const blob = "new_file";
+  const partIndex = 1;
+  const blockId = blobService.getBlockId(md5, partIndex);
 
   console.log(`md5: ${md5}`);
+  console.log(`blockId: ${blockId}`);
 
   const currentTimestamp = Date.now();
   const startDate = new Date(currentTimestamp);
@@ -112,8 +115,10 @@ async function asyncMain() {
 
   const token = blobService.generateSharedAccessSignature(container, blob, sharedAccessPolicy);
   const sasUrl = blobService.getUrl(container, blob, token);
+  const blockUrl = sasUrl + "&comp=block&blockId=" + new Buffer(blockId).toString('base64');
 
   console.log(`sasUrl: ${sasUrl}`);
+  console.log(`blockUrl: ${blockUrl}`);
 
   const headers = {
     'x-ms-blob-type': 'BlockBlob',
@@ -122,7 +127,7 @@ async function asyncMain() {
     'Content-MD5': new Buffer(md5, 'hex').toString('base64')
   };
 
-  const writeBlobResponse = await azureRequest(sasUrl, data, headers);
+  const writeBlobResponse = await azureRequest(blockUrl, data, headers);
   console.log(JSON.stringify(writeBlobResponse));
 
   const getBlobsResponse = await getBlobs(container);
