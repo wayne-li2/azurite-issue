@@ -115,7 +115,7 @@ async function asyncMain() {
 
   const token = blobService.generateSharedAccessSignature(container, blob, sharedAccessPolicy);
   const sasUrl = blobService.getUrl(container, blob, token);
-  const blockUrl = sasUrl + "&comp=block&blockId=" + new Buffer(blockId).toString('base64');
+  const blockUrl = sasUrl + "&comp=block&blockid=" + new Buffer(blockId).toString('base64');
 
   console.log(`sasUrl: ${sasUrl}`);
   console.log(`blockUrl: ${blockUrl}`);
