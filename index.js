@@ -50,6 +50,24 @@ function azureRequest(url, body, headers) {
   });
 }
 
+function writeBlock(blockId, containerName, blob, content, options) {
+  return new Promise((resolve) => {
+    blobService.createBlockFromText(blockId, containerName, blob, content, options, function(error, result, response) { 
+      if (!error) {
+        resolve({
+          response: response,
+          result: result
+        });
+      } else {
+        resolve({
+          response: response,
+          error: error
+        });
+      }
+    })
+  });
+}
+
 function getBlobs(containerName) {
   return new Promise((resolve) => {
     blobService.listBlobsSegmented(containerName, null, function(error, result, response) {
@@ -89,7 +107,6 @@ function getBlocks(containerName, blob) {
 async function asyncMain() {
   const container = "container";
   const createContainerResponse = await createContainerIfNotExists(container);
-  console.log(createContainerResponse);
 
   const data = 'Lorem ipsum dolor sit amet';
   const size = 26;
@@ -98,44 +115,19 @@ async function asyncMain() {
   const partIndex = 1;
   const blockId = blobService.getBlockId(md5, partIndex);
 
-  console.log(`md5: ${md5}`);
-  console.log(`blockId: ${blockId}`);
+  const writeBlobResponse = await writeBlock(blockId, container, blob, data, {useTransactionalMD5: true, transactionalContentMD5: Buffer.from(md5, 'hex').toString('base64')});
+  console.log(writeBlobResponse);
 
-  const currentTimestamp = Date.now();
-  const startDate = new Date(currentTimestamp);
-  const expiryDate = new Date(currentTimestamp + ExpiryIntervalMinutes * 60000);
+  let getAllBlocksResponse = await getBlocks(container, blob);
+  console.log(getAllBlocksResponse);
+  console.log(`getAllBlocksResponse.response.body: ${JSON.stringify(getAllBlocksResponse.response.body)}`);
 
-  const sharedAccessPolicy = {
-    AccessPolicy: {
-      Permissions: azure.BlobUtilities.SharedAccessPermissions.WRITE,
-      Start: startDate,
-      Expiry: expiryDate
-    }
-  };
+  const badData = 'Asdfg asdfg asdfg asd asdf';
+  const badWriteBlobResponse = await writeBlock(blockId, container, blob, badData, {useTransactionalMD5: true, transactionalContentMD5: Buffer.from(md5, 'hex').toString('base64')});
+  console.log("badWriteBlobResponse");
+  console.log(badWriteBlobResponse);
 
-  const token = blobService.generateSharedAccessSignature(container, blob, sharedAccessPolicy);
-  const sasUrl = blobService.getUrl(container, blob, token);
-  const blockUrl = sasUrl + "&comp=block&blockid=" + new Buffer(blockId).toString('base64');
-
-  console.log(`sasUrl: ${sasUrl}`);
-  console.log(`blockUrl: ${blockUrl}`);
-
-  const headers = {
-    'x-ms-blob-type': 'BlockBlob',
-    'x-ms-date': startDate.toUTCString(),
-    'Content-Length': size.toString(),
-    'Content-MD5': new Buffer(md5, 'hex').toString('base64')
-  };
-
-  const writeBlobResponse = await azureRequest(blockUrl, data, headers);
-  console.log(JSON.stringify(writeBlobResponse));
-
-  const getBlobsResponse = await getBlobs(container);
-  console.log(getBlobsResponse);
-  console.log(`getBlobsResponse.response.body: ${JSON.stringify(getBlobsResponse.response.body)}`);
-  console.log(`getBlobsResponse blob: ${JSON.stringify(getBlobsResponse.response.body.EnumerationResults.Blobs.Blob)}`);
-
-  const getAllBlocksResponse = await getBlocks(container, blob);
+  getAllBlocksResponse = await getBlocks(container, blob);
   console.log(getAllBlocksResponse);
   console.log(`getAllBlocksResponse.response.body: ${JSON.stringify(getAllBlocksResponse.response.body)}`);
 }
